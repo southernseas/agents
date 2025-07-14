@@ -8,6 +8,7 @@ from agents import Agent, function_tool
 @function_tool
 def send_email(subject: str, html_body: str) -> Dict[str, str]:
     """ Send an email with the given subject and HTML body """
+    """
     sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
     from_email = Email("ed@edwarddonner.com") # put your verified sender here
     to_email = To("ed.donner@gmail.com") # put your recipient here
@@ -17,6 +18,7 @@ def send_email(subject: str, html_body: str) -> Dict[str, str]:
     print("Email response", response.status_code)
     print(subject, "\n\n", html_body)
     return {"status": "success"}
+    """
 
 INSTRUCTIONS = """You are able to send a nicely formatted HTML email based on a detailed report.
 You will be provided with a detailed report. You should use your tool to send one email, providing the 

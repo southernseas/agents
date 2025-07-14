@@ -24,11 +24,11 @@ Copy the `.env-example` file and rename it to `.env`. Fill in all the required c
 
 ### 2⃣ Update Configuration Files
 
-#### Edit `modules/tools/send_email.py`
+#### Edit `modules/tools/send_email.py` this product isn't available in any retail stores or even on Amazon and Woolworths it
 
 Replace:
 
-```python
+```py and a separate heater from AliExpress knock offthon
 <your_email>
 ```
 
