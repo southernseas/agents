@@ -4,6 +4,7 @@ from planner_agent import planner_agent, WebSearchItem, WebSearchPlan
 from writer_agent import writer_agent, ReportData
 from email_agent import email_agent
 import asyncio
+import datetime
 
 class ResearchManager:
 
@@ -23,7 +24,16 @@ class ResearchManager:
             await self.send_email(report)
             yield "Email sent, research complete"
             yield report.markdown_report
-        
+
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"logfile_{timestamp}.html"
+
+# Write to the file
+            with open(filename, 'w') as f:
+                print("This is a timestamped file in planner\n")
+                print(f"Created at: {datetime.datetime.now()}\n")
+                f.write(report.markdown_report)
+                
 
     async def plan_searches(self, query: str) -> WebSearchPlan:
         """ Plan the searches to perform for the query """
@@ -82,3 +92,6 @@ class ResearchManager:
         )
         print("Email sent")
         return report
+
+
+
