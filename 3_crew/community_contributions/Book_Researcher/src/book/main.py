@@ -10,7 +10,7 @@ def run():
     """
     inputs = {
         # Example input for genre-based research
-        'genre': 'Fantasy'
+        'genre': 'Biography'
     }
 
     # Kickoff the crew with inputs

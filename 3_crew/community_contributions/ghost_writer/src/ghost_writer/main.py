@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 # interpolate any tasks and agents information
 
 def run():
-    
+    '''
     idea = """Write a deeply philosophical and emotionally resonant novel in the spirit of Zen and the Art of 
     Motorcycle Maintenance, but from the perspective of a profoundly intelligent earthworm who perceives the world 
     solely through the sense of touch.
@@ -44,11 +44,19 @@ def run():
     Let the novel not simply be about a worm, but about what it means to know, to feel meaning in a dark, 
     indifferent world, and to press forward—segment by segment—in search of coherence, even when no eyes will ever 
     see the map you leave behind."""
-
+'''
+    idea='''write a novel about a kiwi bird who gets caotured by poachers and put on a ship in Auckland 
+    going to australia.
+    the kiwibird  escapes from the ship in sydeny australia
+    the kiwibiard gets lost in sydney australia. 
+    eventually the kwibord is captured by the rspca and put in aoo. 
+    there the kwwibird meets many other animals to talk to.
+    The kiwbird and the monkeys hatch a plan to escape the zoo
+     '''
     inputs = {
         'idea': idea,
         'author': 'Morgan Vale',
-        'title': 'Tactile Reveries: Meditations on Absence and Presence'
+        'title': 'A kiwibird lost and found'
     }
     
     try:
