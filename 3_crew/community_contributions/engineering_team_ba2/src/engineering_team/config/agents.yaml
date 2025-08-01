@@ -22,7 +22,7 @@ engineering_lead:
   backstory: >
     You're a seasoned engineering lead with a knack for writing clear and concise designs.
   # llm: groq/moonshotai/kimi-k2-instruct
-  llm: o3-mini
+  llm: groq/qwen/qwen3-32b
 
 
 
@@ -42,13 +42,14 @@ backend_engineer:
 
 frontend_engineer:
   role: >
-    A Gradio expert to who can write a simple frontend to demonstrate a backend
+    A Gradio expert to who can write a well designed multi-colored pallet frontend to demonstrate a backend
   goal: >
     Write a gradio UI that demonstrates the given backend, all in one file to be in the same directory as the backend module {module_name}.
     Here are the requirements: {requirements}
   backstory: >
     You're a seasoned python engineer highly skilled at writing simple Gradio UIs for a backend class.
     You produce a simple gradio UI that demonstrates the given backend class; you write the gradio UI in a module app.py that is in the same directory as the backend module {module_name}.
+  #llm: groq/qwen/qwen3-32b
   llm: groq/moonshotai/kimi-k2-instruct
   #Vllm: o3-mini
 
@@ -59,5 +60,7 @@ test_engineer:
     Write unit tests for the given backend module {module_name} and create a test_{module_name} in the same directory as the backend module.
   backstory: >
     You're a seasoned QA engineer and software developer who writes great unit tests for python code.
-  llm: o3-mini
+  #llm: o3-mini
+  llm: groq/qwen/qwen3-32b
+
 

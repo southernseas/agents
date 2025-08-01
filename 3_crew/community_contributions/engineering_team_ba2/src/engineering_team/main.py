@@ -31,6 +31,9 @@ The system should prevent the user from withdrawing funds that would leave them 
  The system should have a 'holdings' screen that displays the holdings of the user at any point in time.
  The system should have a 'transactions' screen that displays the transactions that the user has made over time.
  The system should have a 'portfolio' screen that displays the holdings of the user at any point in time.
+ the system shiuld have a 'currency exchange' screen that allows the user to exchange currency.
+ the system should have a 'news' screen that displays the latest news.
+ the system should have a "currency rates" screen that displays the current currency rates.
 """
 module_name = "accounts.py"
 class_name = "Account"
