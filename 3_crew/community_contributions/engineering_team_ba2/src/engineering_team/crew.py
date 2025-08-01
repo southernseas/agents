@@ -53,6 +53,12 @@ class EngineeringTeam():
             max_execution_time=500, 
             max_retry_limit=3 
         )
+    @agent
+    def technical_writer(self) -> Agent:
+        return Agent(
+            config=self.agents_config['technical_writer'],
+            verbose=True,
+        )
 
     @task
     def requirements_task2(self) -> Task:
@@ -81,8 +87,13 @@ class EngineeringTeam():
     def test_task(self) -> Task:
         return Task(
             config=self.tasks_config['test_task'],
-        )   
-
+        )
+    @task
+    def technical_documentation_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['technical_documentation_task'],
+        )
+    
     @crew
     def crew(self) -> Crew:
         """Creates the research crew"""

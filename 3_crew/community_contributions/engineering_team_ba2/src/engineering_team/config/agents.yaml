@@ -63,4 +63,16 @@ test_engineer:
   #llm: o3-mini
   llm: groq/qwen/qwen3-32b
 
+  teshnical_writer:
+  role: >
+    An technical writer with documentation skills who can write  given backend module {module_name} and create a technical documentation for the given backend module {module_name}
+  goal: >
+    Write a technical documentation for the given backend module {module_name} and create a {module_name}_technical_documentation.md in the same directory as the backend module.
+    The technical documentation should be in markdown format.
+  backstory: >
+    You're a seasoned technical writer with a knack for writing clear and concise documentation.
+    You write the technical documentation in markdown format.
+  llm: groq/qwen/qwen3-32b
+  llm: o3-mini
+
 

@@ -62,3 +62,15 @@ test_task:
   context:
     - code_task
   output_file: output/test_{module_name}
+
+# add   a task to write a technical documentation for the given backend module {module_name}
+technical_documentation_task:
+  description: >
+    Write a technical documentation for the given backend module {module_name} and create a {module_name}_technical_documentation.md in the same directory as the backend module.
+    The technical documentation should be in markdown format.
+  expected_output: >
+    write echnical documentation for the given backend module {module_name}.
+  agent: technical_writer
+  context:
+    - code_task 
+  output_file: output/{module_name}_technical_documentation.md
