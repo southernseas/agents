@@ -1,203 +1,209 @@
-import hashlib
 import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
 
-class Transaction:
-    """Represents a single stock transaction (buy or sell)."""
-    
-    def __init__(self, symbol: str, quantity: int, transaction_type: str, timestamp: datetime.datetime):
-        self.symbol = symbol
-        self.quantity = quantity
-        self.transaction_type = transaction_type
-        self.timestamp = timestamp
-    
-    def __repr__(self) -> str:
-        action = "Bought" if self.transaction_type == "buy" else "Sold"
-        return f"{action} {self.quantity} shares of {self.symbol} at {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
-
-
+# Mock implementation of get_share_price for testing
 def get_share_price(symbol: str) -> float:
-    """Mock implementation for development/testing returns fixed prices."""
+    """Mock implementation for testing - returns fixed prices for certain stocks"""
     prices = {
         "AAPL": 150.0,
-        "TSLA": 180.0,
-        "GOOGL": 2800.0,
+        "TSLA": 250.0,
+        "GOOGL": 2700.0
     }
-    return prices.get(symbol.upper(), 0.0)
-
+    return prices.get(symbol.upper(), 100.0)
 
 class Account:
-    """Represents a user's trading account with funds, holdings, and transaction history."""
+    """Account class for managing user accounts in a trading simulation platform."""
     
-    # Class variable to store all accounts
-    _accounts: Dict[str, 'Account'] = {}
+    # Class-level storage for all registered users
+    _all_users: Dict[str, 'Account'] = {}
     
-    def __init__(self, username: str, email: str, password: str):
-        self.username = username
+    def __init__(self, email: str, password: str):
+        """Initialize a new account."""
         self.email = email
-        # Simple hash for demonstration (use bcrypt in production)
-        self.password_hash = hashlib.sha256(password.encode()).hexdigest()
-        self.balance = 0.0
+        self.password = password
+        self.funds = 0.0
         self.initial_deposit = 0.0
         self.holdings: Dict[str, int] = {}
-        self.transactions: List[Transaction] = []
+        self.transaction_history: List[Dict] = []
     
     @classmethod
-    def register(cls, username: str, email: str, password: str) -> bool:
-        """Register a new account."""
-        if not username or not email or not password:
-            raise ValueError("Username, email, and password are required")
+    def register(cls, email: str, password: str) -> 'Account':
+        """Create a new user account."""
+        if email in cls._all_users:
+            raise ValueError(f"Email {email} already exists")
         
-        # Check if username or email already exists
-        for account in cls._accounts.values():
-            if account.username == username:
-                raise ValueError("Username already exists")
-            if account.email == email:
-                raise ValueError("Email already registered")
-        
-        new_account = cls(username, email, password)
-        cls._accounts[username] = new_account
-        return True
+        user = cls(email, password)
+        cls._all_users[email] = user
+        return user
     
     @classmethod
-    def login(cls, username_or_email: str, password: str) -> Optional['Account']:
-        """Login with username or email and password."""
-        password_hash = hashlib.sha256(password.encode()).hexdigest()
+    def login(cls, email: str, password: str) -> 'Account':
+        """Authenticate a user by email and password."""
+        if email not in cls._all_users:
+            raise ValueError("User not found")
         
-        # Try to find by username
-        if username_or_email in cls._accounts:
-            account = cls._accounts[username_or_email]
-            if account.password_hash == password_hash:
-                return account
+        user = cls._all_users[email]
+        if user.password != password:
+            raise ValueError("Invalid password")
         
-        # Try to find by email
-        for account in cls._accounts.values():
-            if account.email == username_or_email and account.password_hash == password_hash:
-                return account
-        
-        return None
+        return user
     
     def deposit_funds(self, amount: float) -> None:
-        """Deposit funds into the account."""
+        """Add funds to the account."""
         if amount <= 0:
-            raise ValueError("Deposit amount must be positive")
+            raise ValueError("Amount must be positive")
         
-        self.balance += amount
         if self.initial_deposit == 0:
             self.initial_deposit = amount
+        
+        self.funds += amount
+        
+        self.transaction_history.append({
+            "type": "deposit",
+            "amount": amount,
+            "timestamp": datetime.datetime.now().isoformat()
+        })
     
     def withdraw_funds(self, amount: float) -> None:
         """Withdraw funds from the account."""
         if amount <= 0:
-            raise ValueError("Withdrawal amount must be positive")
+            raise ValueError("Amount must be positive")
         
-        if self.balance < amount:
-            raise ValueError("Insufficient funds for withdrawal")
+        if self.funds < amount:
+            raise ValueError("Insufficient funds")
         
-        self.balance -= amount
+        self.funds -= amount
+        
+        self.transaction_history.append({
+            "type": "withdrawal",
+            "amount": amount,
+            "timestamp": datetime.datetime.now().isoformat()
+        })
     
-    def buy_stock(self, symbol: str, quantity: int) -> None:
-        """Buy shares of a stock."""
+    def buy_shares(self, symbol: str, quantity: int) -> None:
+        """Buy shares of a given symbol."""
         if quantity <= 0:
             raise ValueError("Quantity must be positive")
         
-        price = get_share_price(symbol.upper())
-        if price <= 0:
-            raise ValueError("Invalid stock symbol")
-        
-        total_cost = price * quantity
-        if self.balance < total_cost:
-            raise ValueError("Insufficient funds to buy shares")
-        
-        # Update balance and holdings
-        self.balance -= total_cost
         symbol = symbol.upper()
+        current_price = get_share_price(symbol)
+        total_cost = current_price * quantity
+        
+        if self.funds < total_cost:
+            raise ValueError(
+                f"Insufficient funds to purchase {quantity} shares of {symbol} "
+                f"at ${current_price} each. Available: ${self.funds}"
+            )
+        
+        # Execute the transaction
+        self.funds -= total_cost
+        
         if symbol in self.holdings:
             self.holdings[symbol] += quantity
         else:
             self.holdings[symbol] = quantity
         
-        # Record transaction
-        transaction = Transaction(symbol, quantity, "buy", datetime.datetime.now())
-        self.transactions.append(transaction)
+        self.transaction_history.append({
+            "type": "buy",
+            "symbol": symbol,
+            "quantity": quantity,
+            "price": current_price,
+            "total_cost": total_cost,
+            "timestamp": datetime.datetime.now().isoformat()
+        })
     
-    def sell_stock(self, symbol: str, quantity: int) -> None:
-        """Sell shares of a stock."""
+    def sell_shares(self, symbol: str, quantity: int) -> None:
+        """Sell shares of a given symbol."""
         if quantity <= 0:
             raise ValueError("Quantity must be positive")
         
         symbol = symbol.upper()
+        
         if symbol not in self.holdings or self.holdings[symbol] < quantity:
-            raise ValueError("Insufficient shares to sell")
+            raise ValueError(
+                f"Insufficient holdings to sell {quantity} shares of {symbol}. "
+                f"Current holdings: {self.holdings.get(symbol, 0)}"
+            )
         
-        price = get_share_price(symbol)
-        if price <= 0:
-            raise ValueError("Invalid stock symbol")
+        current_price = get_share_price(symbol)
+        total_value = current_price * quantity
         
-        total_proceeds = price * quantity
-        
-        # Update balance and holdings
-        self.balance += total_proceeds
+        # Execute the transaction
+        self.funds += total_value
         self.holdings[symbol] -= quantity
         
-        # Remove symbol from holdings if quantity reaches 0
+        # Remove symbol from holdings if quantity reaches zero
         if self.holdings[symbol] == 0:
             del self.holdings[symbol]
         
-        # Record transaction
-        transaction = Transaction(symbol, quantity, "sell", datetime.datetime.now())
-        self.transactions.append(transaction)
+        self.transaction_history.append({
+            "type": "sell",
+            "symbol": symbol,
+            "quantity": quantity,
+            "price": current_price,
+            "total_value": total_value,
+            "timestamp": datetime.datetime.now().isoformat()
+        })
     
-    def calculate_portfolio_value(self) -> float:
-        """Calculate total portfolio value (cash + stock holdings)."""
-        stock_value = 0.0
-        for symbol, quantity in self.holdings.items():
-            stock_value += get_share_price(symbol) * quantity
-        
-        return self.balance + stock_value
+    def get_transaction_history(self) -> List[Dict]:
+        """Return the list of all user transactions."""
+        return self.transaction_history.copy()
     
-    def calculate_profit_loss(self) -> float:
-        """Calculate profit or loss from initial deposit."""
-        if self.initial_deposit == 0:
-            return 0.0
-        
-        return self.calculate_portfolio_value() - self.initial_deposit
-    
-    def get_holdings(self) -> Dict[str, int]:
-        """Get current stock holdings."""
+    def get_holdings_summary(self) -> Dict[str, int]:
+        """Return a summary of current holdings."""
         return self.holdings.copy()
     
-    def get_transaction_history(self) -> List[Transaction]:
-        """Get transaction history."""
-        return self.transactions.copy()
+    def get_holdings_detail(self) -> List[Dict]:
+        """Return detailed holdings including current value."""
+        details = []
+        for symbol, quantity in self.holdings.items():
+            current_price = get_share_price(symbol)
+            current_value = current_price * quantity
+            details.append({
+                "symbol": symbol,
+                "quantity": quantity,
+                "current_price": current_price,
+                "current_value": current_value
+            })
+        return details
+    
+    def get_profit_loss(self) -> float:
+        """Compute profit/loss as the difference between current portfolio value and initial deposit."""
+        return self.get_portfolio_value() - self.initial_deposit
+    
+    def get_portfolio_value(self) -> float:
+        """Return the total value of the user's portfolio (cash + value of all holdings)."""
+        return self.funds + self.get_holdings_value()
+    
+    def get_holdings_value(self) -> float:
+        """Return the aggregated market value of all holdings."""
+        total_value = 0.0
+        for symbol, quantity in self.holdings.items():
+            current_price = get_share_price(symbol)
+            total_value += current_price * quantity
+        return total_value
 
-
-# Additional helper functions for UI screens
+# Additional functions for UI screens (as mentioned in requirements)
 
 def get_current_share_prices() -> Dict[str, float]:
-    """Get current share prices for all supported stocks."""
-    return {
-        "AAPL": get_share_price("AAPL"),
-        "TSLA": get_share_price("TSLA"),
-        "GOOGL": get_share_price("GOOGL"),
-    }
-
+    """Get current prices for all available shares."""
+    symbols = ["AAPL", "TSLA", "GOOGL"]
+    return {symbol: get_share_price(symbol) for symbol in symbols}
 
 def get_bond_interest_rates() -> Dict[str, float]:
     """Get current bond interest rates."""
     return {
         "1-month": 0.05,
-        "3-month": 0.10,
-        "6-month": 0.25,
-        "1-year": 0.50,
-        "2-year": 1.00,
-        "3-year": 1.50,
-        "5-year": 2.00,
-        "10-year": 2.50,
-        "20-year": 3.00,
-        "30-year": 3.50,
+        "3-month": 0.06,
+        "6-month": 0.07,
+        "1-year": 0.08,
+        "2-year": 0.09,
+        "3-year": 0.10,
+        "5-year": 0.12,
+        "10-year": 0.15,
+        "20-year": 0.18,
+        "30-year": 0.20
     }
-
 
 def get_currency_rates() -> Dict[str, float]:
     """Get current currency exchange rates (USD as base)."""
@@ -209,15 +215,20 @@ def get_currency_rates() -> Dict[str, float]:
         "CAD": 1.25,
         "AUD": 1.35,
         "CHF": 0.92,
+        "CNY": 6.45
     }
 
-
-def get_latest_news() -> List[str]:
-    """Get latest financial news headlines."""
+def get_latest_news() -> List[Dict]:
+    """Get latest news (mock implementation)."""
     return [
-        "Tech stocks rally on strong earnings reports",
-        "Federal Reserve signals potential rate changes",
-        "Oil prices surge amid global supply concerns",
-        "Cryptocurrency market sees renewed investor interest",
-        "Major indices reach new all-time highs",
+        {
+            "title": "Market Hits All-Time High",
+            "summary": "Major indices reach record levels amid strong earnings...",
+            "timestamp": datetime.datetime.now().isoformat()
+        },
+        {
+            "title": "Tech Stocks Rally",
+            "summary": "Technology sector leads gains with AAPL and TSLA outperforming...",
+            "timestamp": datetime.datetime.now().isoformat()
+        }
     ]

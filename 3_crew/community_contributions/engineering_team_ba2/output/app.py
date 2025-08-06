@@ -1,226 +1,324 @@
 import gradio as gr
 import datetime
-from accounts import Account, get_share_price, get_current_share_prices, get_bond_interest_rates, get_currency_rates, get_latest_news
+from accounts import Account, get_current_share_prices, get_bond_interest_rates, get_currency_rates, get_latest_news
 
-# Global variable to store the currently logged-in account
-current_account = None
+# Global state to track logged-in user
+current_user = None
 
-def login(username_or_email, password):
-    global current_account
-    account = Account.login(username_or_email, password)
-    if account:
-        current_account = account
-        return f"Welcome, {account.username}! Login successful."
-    return "Login failed. Please check your credentials."
+# Theme colors
+PRIMARY_COLOR = "#1f2937"
+SECONDARY_COLOR = "#374151"
+ACCENT_COLOR = "#3b82f6"
+SUCCESS_COLOR = "#10b981"
+WARNING_COLOR = "#f59e0b"
+ERROR_COLOR = "#ef4444"
+BACKGROUND_COLOR = "#f9fafb"
 
-def register(username, email, password):
+def login(email, password):
+    global current_user
     try:
-        success = Account.register(username, email, password)
-        if success:
-            return f"Registration successful for {username}! You can now log in."
+        current_user = Account.login(email, password)
+        return f"✅ Logged in as {email}", gr.update(visible=False), gr.update(visible=True)
     except ValueError as e:
-        return str(e)
+        return f"❌ Login failed: {str(e)}", gr.update(visible=True), gr.update(visible=False)
+
+def register(email, password):
+    try:
+        Account.register(email, password)
+        return f"✅ Registered successfully! Please login."
+    except ValueError as e:
+        return f"❌ Registration failed: {str(e)}"
 
 def deposit(amount):
-    global current_account
-    if not current_account:
-        return "Please login first"
+    if not current_user:
+        return "❌ Please login first"
     try:
-        current_account.deposit_funds(float(amount))
-        return f"Deposited ${amount:.2f}. New balance: ${current_account.balance:.2f}"
+        current_user.deposit_funds(amount)
+        return f"✅ Deposited ${amount:.2f}. New balance: ${current_user.funds:.2f}"
     except ValueError as e:
-        return str(e)
+        return f"❌ Deposit failed: {str(e)}"
 
 def withdraw(amount):
-    global current_account
-    if not current_account:
-        return "Please login first"
+    if not current_user:
+        return "❌ Please login first"
     try:
-        current_account.withdraw_funds(float(amount))
-        return f"Withdrew ${amount:.2f}. New balance: ${current_account.balance:.2f}"
+        current_user.withdraw_funds(amount)
+        return f"✅ Withdrew ${amount:.2f}. New balance: ${current_user.funds:.2f}"
     except ValueError as e:
-        return str(e)
+        return f"❌ Withdrawal failed: {str(e)}"
 
-def buy_stock(symbol, quantity):
-    global current_account
-    if not current_account:
-        return "Please login first"
+def buy_shares(symbol, quantity):
+    if not current_user:
+        return "❌ Please login first"
     try:
-        current_account.buy_stock(symbol, int(quantity))
-        return f"Bought {quantity} shares of {symbol.upper()}"
+        current_user.buy_shares(symbol, quantity)
+        return f"✅ Bought {quantity} shares of {symbol.upper()}"
     except ValueError as e:
-        return str(e)
+        return f"❌ Buy failed: {str(e)}"
 
-def sell_stock(symbol, quantity):
-    global current_account
-    if not current_account:
-        return "Please login first"
+def sell_shares(symbol, quantity):
+    if not current_user:
+        return "❌ Please login first"
     try:
-        current_account.sell_stock(symbol, int(quantity))
-        return f"Sold {quantity} shares of {symbol.upper()}"
+        current_user.sell_shares(symbol, quantity)
+        return f"✅ Sold {quantity} shares of {symbol.upper()}"
     except ValueError as e:
-        return str(e)
+        return f"❌ Sell failed: {str(e)}"
 
-def get_portfolio():
-    global current_account
-    if not current_account:
-        return "Please login first"
+def get_portfolio_info():
+    if not current_user:
+        return "Please login to view portfolio"
     
-    portfolio_value = current_account.calculate_portfolio_value()
-    profit_loss = current_account.calculate_profit_loss()
-    holdings = current_account.get_holdings()
-    
-    holdings_str = "\n".join([f"{k}: {v} shares" for k, v in holdings.items()]) if holdings else "No holdings"
+    holdings = current_user.get_holdings_detail()
+    if not holdings:
+        holdings_text = "No holdings"
+    else:
+        holdings_text = "\n".join([f"{h['symbol']}: {h['quantity']} shares @ ${h['current_price']:.2f} = ${h['current_value']:.2f}" for h in holdings])
     
     return f"""
-Portfolio Value: ${portfolio_value:.2f}
-Profit/Loss: ${profit_loss:.2f}
-Cash Balance: ${current_account.balance:.2f}
+Cash: ${current_user.funds:.2f}
+Holdings Value: ${current_user.get_holdings_value():.2f}
+Total Portfolio Value: ${current_user.get_portfolio_value():.2f}
+Profit/Loss: ${current_user.get_profit_loss():.2f}
+
 Holdings:
-{holdings_str}
+{holdings_text}
 """
 
 def get_transactions():
-    global current_account
-    if not current_account:
-        return "Please login first"
+    if not current_user:
+        return "Please login to view transactions"
     
-    transactions = current_account.get_transaction_history()
+    transactions = current_user.get_transaction_history()
     if not transactions:
         return "No transactions yet"
     
-    return "\n".join([str(t) for t in transactions])
+    result = []
+    for t in transactions:
+        time = datetime.datetime.fromisoformat(t['timestamp']).strftime("%Y-%m-%d %H:%M")
+        if t['type'] == 'deposit':
+            result.append(f"{time} - Deposit: ${t['amount']:.2f}")
+        elif t['type'] == 'withdrawal':
+            result.append(f"{time} - Withdrawal: ${t['amount']:.2f}")
+        elif t['type'] == 'buy':
+            result.append(f"{time} - Buy {t['quantity']} {t['symbol']} @ ${t['price']:.2f} = ${t['total_cost']:.2f}")
+        elif t['type'] == 'sell':
+            result.append(f"{time} - Sell {t['quantity']} {t['symbol']} @ ${t['price']:.2f} = ${t['total_value']:.2f}")
+    
+    return "\n".join(result)
+
+def get_share_prices_display():
+    prices = get_current_share_prices()
+    return "\n".join([f"{symbol}: ${price:.2f}" for symbol, price in prices.items()])
+
+def get_bond_rates_display():
+    rates = get_bond_interest_rates()
+    return "\n".join([f"{term}: {rate*100:.1f}%" for term, rate in rates.items()])
+
+def get_currency_rates_display():
+    rates = get_currency_rates()
+    return "\n".join([f"{currency}: {rate:.2f}" for currency, rate in rates.items()])
+
+def get_news_display():
+    news = get_latest_news()
+    return "\n\n".join([f"**{n['title']}**\n{n['summary']}" for n in news])
 
 def exchange_currency(from_currency, to_currency, amount):
     rates = get_currency_rates()
     if from_currency not in rates or to_currency not in rates:
         return "Invalid currency"
     
-    try:
-        amount = float(amount)
-        converted = (amount / rates[from_currency]) * rates[to_currency]
-        return f"{amount} {from_currency} = {converted:.2f} {to_currency}"
-    except ValueError:
-        return "Invalid amount"
+    converted = amount * (rates[to_currency] / rates[from_currency])
+    return f"{amount} {from_currency} = {converted:.2f} {to_currency}"
 
-with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue", secondary_hue="green", neutral_hue="slate")) as app:
+with gr.Blocks(theme=gr.themes.Soft(
+    primary_hue="blue",
+    secondary_hue="slate",
+    neutral_hue="gray"
+)) as app:
     gr.Markdown("# 🏦 Trading Simulation Platform")
     
-    with gr.Tab("🔐 Login/Register"):
+    with gr.Tab("Login / Register"):
+        with gr.Row():
+            with gr.Column(scale=1):
+                gr.Markdown("### Login")
+                email_input = gr.Textbox(label="Email", placeholder="user@example.com")
+                password_input = gr.Textbox(label="Password", type="password", placeholder="password")
+                login_btn = gr.Button("Login", variant="primary")
+                login_output = gr.Textbox(label="Status", interactive=False)
+                
+            with gr.Column(scale=1):
+                gr.Markdown("### Register")
+                reg_email = gr.Textbox(label="Email", placeholder="user@example.com")
+                reg_password = gr.Textbox(label="Password", type="password", placeholder="password")
+                register_btn = gr.Button("Register", variant="secondary")
+                reg_output = gr.Textbox(label="Status", interactive=False)
+    
+    with gr.Tab("Account Management"):
         with gr.Row():
             with gr.Column():
-                gr.Markdown("### Login")
-                username_login = gr.Textbox(label="Username or Email")
-                password_login = gr.Textbox(label="Password", type="password")
-                login_btn = gr.Button("Login", variant="primary")
-                login_output = gr.Textbox(label="Login Status")
+                gr.Markdown("### Deposit Funds")
+                deposit_amount = gr.Number(label="Amount", value=1000)
+                deposit_btn = gr.Button("Deposit", variant="primary")
+                deposit_output = gr.Textbox(label="Result", interactive=False)
                 
             with gr.Column():
-                gr.Markdown("### Register")
-                username_reg = gr.Textbox(label="Username")
-                email_reg = gr.Textbox(label="Email")
-                password_reg = gr.Textbox(label="Password", type="password")
-                register_btn = gr.Button("Register", variant="secondary")
-                register_output = gr.Textbox(label="Registration Status")
-        
-        login_btn.click(login, [username_login, password_login], login_output)
-        register_btn.click(register, [username_reg, email_reg, password_reg], register_output)
+                gr.Markdown("### Withdraw Funds")
+                withdraw_amount = gr.Number(label="Amount", value=100)
+                withdraw_btn = gr.Button("Withdraw", variant="primary")
+                withdraw_output = gr.Textbox(label="Result", interactive=False)
     
-    with gr.Tab("💰 Account Management"):
-        gr.Markdown("### Manage Your Account")
+    with gr.Tab("Trading"):
         with gr.Row():
-            deposit_amount = gr.Number(label="Deposit Amount", value=0)
-            deposit_btn = gr.Button("Deposit", variant="primary")
-        with gr.Row():
-            withdraw_amount = gr.Number(label="Withdraw Amount", value=0)
-            withdraw_btn = gr.Button("Withdraw", variant="secondary")
-        account_output = gr.Textbox(label="Account Status")
-        
-        deposit_btn.click(deposit, deposit_amount, account_output)
-        withdraw_btn.click(withdraw, withdraw_amount, account_output)
+            with gr.Column():
+                gr.Markdown("### Buy Shares")
+                buy_symbol = gr.Textbox(label="Symbol", placeholder="AAPL")
+                buy_quantity = gr.Number(label="Quantity", value=10, minimum=1)
+                buy_btn = gr.Button("Buy", variant="success")
+                buy_output = gr.Textbox(label="Result", interactive=False)
+                
+            with gr.Column():
+                gr.Markdown("### Sell Shares")
+                sell_symbol = gr.Textbox(label="Symbol", placeholder="AAPL")
+                sell_quantity = gr.Number(label="Quantity", value=10, minimum=1)
+                sell_btn = gr.Button("Sell", variant="error")
+                sell_output = gr.Textbox(label="Result", interactive=False)
     
-    with gr.Tab("📈 Stock Trading"):
-        gr.Markdown("### Trade Stocks")
-        with gr.Row():
-            symbol_buy = gr.Textbox(label="Symbol to Buy", placeholder="AAPL, TSLA, GOOGL")
-            quantity_buy = gr.Number(label="Quantity to Buy", value=1)
-            buy_btn = gr.Button("Buy", variant="primary")
-        
-        with gr.Row():
-            symbol_sell = gr.Textbox(label="Symbol to Sell", placeholder="AAPL, TSLA, GOOGL")
-            quantity_sell = gr.Number(label="Quantity to Sell", value=1)
-            sell_btn = gr.Button("Sell", variant="secondary")
-        
-        trade_output = gr.Textbox(label="Trade Status")
-        
-        buy_btn.click(buy_stock, [symbol_buy, quantity_buy], trade_output)
-        sell_btn.click(sell_stock, [symbol_sell, quantity_sell], trade_output)
-    
-    with gr.Tab("📊 Current Share Prices"):
-        gr.Markdown("### Live Stock Prices")
-        prices_text = gr.Textbox(
-            value="\n".join([f"{k}: ${v:.2f}" for k, v in get_current_share_prices().items()]),
-            label="Current Prices",
-            interactive=False
+    with gr.Tab("Portfolio"):
+        portfolio_display = gr.Textbox(
+            label="Portfolio Overview",
+            lines=10,
+            interactive=False,
+            value="Please login to view your portfolio"
         )
+        refresh_portfolio = gr.Button("Refresh")
     
-    with gr.Tab("🏛️ Bond Interest Rates"):
-        gr.Markdown("### Current Bond Rates")
-        bonds_text = gr.Textbox(
-            value="\n".join([f"{k}: {v*100:.2f}%" for k, v in get_bond_interest_rates().items()]),
-            label="Bond Rates",
-            interactive=False
+    with gr.Tab("Transactions"):
+        transactions_display = gr.Textbox(
+            label="Transaction History",
+            lines=15,
+            interactive=False,
+            value="Please login to view transactions"
         )
+        refresh_transactions = gr.Button("Refresh")
     
-    with gr.Tab("💱 Currency Exchange"):
-        gr.Markdown("### Exchange Currency")
+    with gr.Tab("Market Data"):
+        with gr.Row():
+            with gr.Column():
+                gr.Markdown("### Current Share Prices")
+                share_prices = gr.Textbox(
+                    label="Prices",
+                    lines=5,
+                    interactive=False,
+                    value=get_share_prices_display()
+                )
+                refresh_prices = gr.Button("Refresh Prices")
+                
+            with gr.Column():
+                gr.Markdown("### Bond Interest Rates")
+                bond_rates = gr.Textbox(
+                    label="Rates",
+                    lines=10,
+                    interactive=False,
+                    value=get_bond_rates_display()
+                )
+    
+    with gr.Tab("Currency Exchange"):
+        gr.Markdown("### Current Exchange Rates")
+        currency_rates_display = gr.Textbox(
+            label="Rates",
+            lines=8,
+            interactive=False,
+            value=get_currency_rates_display()
+        )
+        
+        gr.Markdown("### Exchange Calculator")
         with gr.Row():
             from_currency = gr.Dropdown(
                 choices=list(get_currency_rates().keys()),
-                value="USD",
-                label="From Currency"
+                label="From Currency",
+                value="USD"
             )
             to_currency = gr.Dropdown(
                 choices=list(get_currency_rates().keys()),
-                value="EUR",
-                label="To Currency"
+                label="To Currency",
+                value="EUR"
             )
-        exchange_amount = gr.Number(label="Amount", value=100)
-        exchange_btn = gr.Button("Exchange", variant="primary")
-        exchange_output = gr.Textbox(label="Exchange Result")
-        
-        exchange_btn.click(exchange_currency, [from_currency, to_currency, exchange_amount], exchange_output)
+            amount = gr.Number(label="Amount", value=100)
+        exchange_btn = gr.Button("Calculate", variant="primary")
+        exchange_result = gr.Textbox(label="Result", interactive=False)
     
-    with gr.Tab("💼 Portfolio"):
-        gr.Markdown("### Your Portfolio Overview")
-        portfolio_btn = gr.Button("Refresh Portfolio", variant="primary")
-        portfolio_output = gr.Textbox(label="Portfolio Details", lines=10)
-        
-        portfolio_btn.click(get_portfolio, [], portfolio_output)
-    
-    with gr.Tab("📜 Transactions"):
-        gr.Markdown("### Transaction History")
-        transactions_btn = gr.Button("Refresh Transactions", variant="primary")
-        transactions_output = gr.Textbox(label="All Transactions", lines=15)
-        
-        transactions_btn.click(get_transactions, [], transactions_output)
-    
-    with gr.Tab("📰 News"):
-        gr.Markdown("### Latest Financial News")
-        news_text = gr.Textbox(
-            value="\n".join([f"• {news}" for news in get_latest_news()]),
-            label="News Headlines",
+    with gr.Tab("News"):
+        news_display = gr.Textbox(
+            label="Latest News",
+            lines=10,
             interactive=False,
-            lines=10
+            value=get_news_display()
         )
+        refresh_news = gr.Button("Refresh News")
     
-    with gr.Tab("💵 Currency Rates"):
-        gr.Markdown("### Current Currency Rates")
-        currency_text = gr.Textbox(
-            value="\n".join([f"{k}: {v}" for k, v in get_currency_rates().items()]),
-            label="Exchange Rates (USD base)",
-            interactive=False
-        )
+    # Event handlers
+    login_btn.click(
+        fn=login,
+        inputs=[email_input, password_input],
+        outputs=[login_output, gr.State(), gr.State()]
+    )
+    
+    register_btn.click(
+        fn=register,
+        inputs=[reg_email, reg_password],
+        outputs=[reg_output]
+    )
+    
+    deposit_btn.click(
+        fn=deposit,
+        inputs=[deposit_amount],
+        outputs=[deposit_output]
+    )
+    
+    withdraw_btn.click(
+        fn=withdraw,
+        inputs=[withdraw_amount],
+        outputs=[withdraw_output]
+    )
+    
+    buy_btn.click(
+        fn=buy_shares,
+        inputs=[buy_symbol, buy_quantity],
+        outputs=[buy_output]
+    )
+    
+    sell_btn.click(
+        fn=sell_shares,
+        inputs=[sell_symbol, sell_quantity],
+        outputs=[sell_output]
+    )
+    
+    refresh_portfolio.click(
+        fn=get_portfolio_info,
+        outputs=[portfolio_display]
+    )
+    
+    refresh_transactions.click(
+        fn=get_transactions,
+        outputs=[transactions_display]
+    )
+    
+    refresh_prices.click(
+        fn=get_share_prices_display,
+        outputs=[share_prices]
+    )
+    
+    exchange_btn.click(
+        fn=exchange_currency,
+        inputs=[from_currency, to_currency, amount],
+        outputs=[exchange_result]
+    )
+    
+    refresh_news.click(
+        fn=get_news_display,
+        outputs=[news_display]
+    )
 
 if __name__ == "__main__":
     app.launch()

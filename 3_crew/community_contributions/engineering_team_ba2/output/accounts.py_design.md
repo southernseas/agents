@@ -1,226 +1,111 @@
-# Detailed Design for accounts.py Module
+# Detailed Design for `accounts.py` Module
 
-## 1. Classes
-
-### 1.1 `Account` Class
-Manages user account operations, trading transactions, and financial calculations. All functionality is encapsulated in this single class.
-
-**Attributes:**
-```python
-- username: str
-- password: str
-- email: str
-- balance: float
-- portfolio: Dict[str, int]  # {symbol: quantity_held}
-- initial_deposit: float
-- created_at: datetime.datetime
-- transaction_history: List[Dict]  # List of all transactions
-```
+## Overview
+The `accounts.py` module defines the `Account` class for managing user accounts in a trading simulation platform. The class encapsulates user registration, authentication, funds management, trading transactions, portfolio tracking, and transaction history. The module integrates with external functions like `get_share_price(symbol)` for real-time share price retrieval.
 
 ---
 
-## 2. Methods
+## Classes and Functions
 
-### 2.1 Class Constructor
-```python
-def __init__(self, username: str, password: str, email: str, initial_deposit: float)
-```
-- Creates a new account with base fields initialized
-- Validates password format (must be >8 chars)
-- Sets `initial_deposit` as baseline for profit/loss calculations
-- Initializes empty portfolio dictionary
+### Class: `Account`
+Singleton per user, representing a user account and managing financial operations.
 
----
+#### Class-level Attributes
+- `_all_users`: Dictionary to store all registered users ({`email`: `Account` instance}).
 
-### 2.2 Account Management
-```python
-def login(self, username: str, password: str) -> None
-```
-- Validates username/password against stored credentials
-- Raises `AuthenticationError` for invalid credentials
-
-```python
-def validate_password(password: str) -> None
-```
-- Static method for password format validation
-- Enforces length, complexity
-
-```python
-def set_password(self, new_password: str) -> None
-```
-- Updates password with validation
-- Requires current password
-- Raises `AuthenticationError` if invalid
+#### Instance Attributes
+- `email`: str - unique email identifier.
+- `password`: str - secure user password (stored in plaintext for this design; note: in production, this should be hashed).
+- `funds`: float - available balance for trading.
+- `initial_deposit`: float - user's first deposit (for profit/loss calculations).
+- `holdings`: Dict[str, int] - mapping from stock symbols to owned quantities (e.g., `{"AAPL": 500}`).
+- `transaction_history`: List[Dict] - list of all transactions (buy/sell) with metadata.
 
 ---
 
-### 2.3 Balance Management
-```python
-def deposit(self, amount: float) -> None
-```
-- Adds funds to account balance
-- Logs transaction
-- Raises `ValueError` for non-positive amounts
+### Methods
 
-```python
-def withdraw(self, amount: float) -> None
-```
-- Subtracts funds from balance
-- Validates against available balance
-- Raises `InsufficientFundsError` if negative balance would occur
+#### Static/Class Methods
+- **`register(email: str, password: str) -> Account`**
+  Creates a new user account, validates email uniqueness, and initializes balances/holdings.
+  - Raises `ValueError` if the email already exists.
 
-```python
-def get_balance(self) -> float
-```
-- Returns current account balance
+- **`login(email: str, password: str) -> Account`**
+  Authenticates a user by email/password and returns the corresponding `Account` instance.
+  - Raises `ValueError` for invalid credentials or non-existent user.
 
----
+#### Instance Methods
+- **`deposit_funds(amount: float) -> None`**
+  Adds specified amount to user's funds.
+  - Raises `ValueError` if amount is non-positive.
 
-### 2.4 Trading Operations
-```python
-def buy_shares(self, symbol: str, quantity: int) -> None
-```
-- Calculate cost using `get_share_price()`
-- Validates sufficient funds
-- Adds shares to portfolio (increment if already held)
-- Logs transaction
-- Raises:
-  - `ShareNotFoundError` for invalid symbols
-  - `InsufficientFundsError` for insufficient balance
+- **`withdraw_funds(amount: float) -> None`**
+  Deducts funds while ensuring the balance does not go negative.
+  - Raises `ValueError` if insufficient funds.
 
-```python
-def sell_shares(self, symbol: str, quantity: int) -> None
-```
-- Validates owned shares count
-- Removes shares from portfolio (subtract from quantity)
-- Adds proceeds to balance
-- Logs transaction
-- Raises:
-  - `ShareNotFoundError` for invalid symbols
-  - `InvalidQuantityError` for quantities exceeding holdings
+- **`buy_shares(symbol: str, quantity: int) -> None`**
+  Validates available balance and share price, then executes a purchase.
+  - Uses `get_share_price(symbol)` to fetch current market price.
+  - Raises `ValueError` for insufficient funds.
 
-```python
-def calculate_trade_value(symbol: str, quantity: int) -> float
-```
-- Static helper method to compute trade value
-- Uses `get_share_price()`
+- **`sell_shares(symbol: str, quantity: int) -> None`**
+  Validates ownership of shares before selling and updates balance.
+  - Raises `ValueError` for insufficient holdings.
 
----
+- **`get_transaction_history() -> List[Dict]`**
+  Returns the list of all user transactions with details (timestamp, type, quantity, etc.).
 
-### 2.5 Portfolio Management
-```python
-def calculate_portfolio_value(self) -> float
-```
-- Sum value of all holdings using `get_share_price()`
-- Adds cash balance for total portfolio value
+- **`get_holdings_summary() -> Dict[str, int]`**
+  Returns a summary of current holdings (e.g., `{"AAPL": 400, "TSLA": 200}`).
 
-```python
-def calculate_profit_loss(self) -> float
-```
-- Computes difference between current value and initial deposit
-- Returns positive/profit or negative/loss amount
-
-```python
-def get_holdings(self) -> List[Dict]
-```
-- Returns list of owned shares with:
-  - symbol
-  - quantity
-  - current price (from `get_share_price()`)
-  - total value
-
-```python
-def get_transaction_history(self) -> List[Dict]
-```
-- Returns all logged transactions with:
-  - timestamp
-  - transaction type
-  - symbol
-  - quantity
-  - amount
-  - balance after transaction
-
----
-
-### 2.6 Financial Reports
-```python
-def generate_profit_loss_report(self) -> Dict
-```
-- Returns dictionary with:
-  - total deposits
-  - total withdrawals
-  - net change from trading
-  - current profit/loss
-
-```python
-def get_account_summary(self) -> Dict
-```
-- Returns comprehensive summary including:
-  - account balance
-  - portfolio value
-  - profit/loss percentage
-  - all holdings with details
-
----
-
-### 2.7 External Integrations
-```python
-def get_share_price(symbol: str) -> float
-```
-- Static method with test implementation:
+- **`get_holdings_detail() -> List[Dict]`**
+  Returns detailed holdings including current value:
   ```python
-  FIXED_PRICES = {
-      'AAPL': 190.0,
-      'TSLA': 250.0,
-      'GOOGL': 125.0
-  }
-  return FIXED_PRICES.get(symbol, 0)
+  [
+    {"symbol": "AAPL", "quantity": 400, "current_price": 150.0, "current_value": 60000.0}, 
+    ...
+  ]
   ```
 
-```python
-def get_interest_rates() -> Dict
-```
-- Static method with test implementation:
-  ```python
-  return {
-      '1-month': 0.5,
-      '3-month': 0.75,
-      '6-month': 1.0,
-      '1-year': 1.5,
-      ...
-      '30-year': 4.2
-  }
-  ```
+- **`get_profit_loss() -> float`**
+  Computes profit/loss as the difference between current portfolio value and the initial deposit.
+
+- **`get_portfolio_value() -> float`**
+  Returns the total value of the user's portfolio (cash + value of all holdings).
+
+- **`get_holdings_value() -> float`**
+  Returns the aggregated market value of all holdings.
 
 ---
 
-## 3. Error Classes
-All exceptions are defined in the Account class:
-```python
-class AuthenticationError(Exception): ...
-class InsufficientFundsError(Exception): ...
-class InvalidQuantityError(Exception): ...
-class ShareNotFoundError(Exception): ...
-class TransactionValidationError(Exception): ...
-class CurrencyExchangeError(Exception): ...
-```
+### Validation Rules
+1. **Withdrawals**: Ensures `funds >= amount`.
+2. **Purchases**: Validates that `funds >= cost = quantity * get_share_price(symbol)`.
+3. **Sales**: Validates that ownership quantity is sufficient.
+4. **Funds and Transactions**: Ensures atomic updates (e.g., both `holdings` and `funds` are updated or rolled back in case of errors).
 
 ---
 
-## 4. Transaction Log Format
-Each transaction stored as dictionary with:
-```python
-{
-    'type': 'deposit' | 'withdraw' | 'buy' | 'sell',
-    'timestamp': datetime.datetime,
-    'symbol': str,
-    'quantity': int, 
-    'amount': float,
-    'total_value': float,
-    'remaining_balance': float
-}
-```
+### Error Handling
+- All operations raise `ValueError` with descriptive messages for invalid inputs or insufficient resources.
+- Example error: `ValueError("Insufficient funds to purchase 150 shares of AAPL at $250 each")`.
 
 ---
 
-This design provides a complete, self-contained account management system that meets all specified requirements. The class handles authentication, financial transactions, portfolio management, reporting, and integrates with required external systems while maintaining data consistency and security.
+### Assumptions and Notes
+1. **External Integration**: Relies on a tested `get_share_price(symbol)` function for real-time or fixed testing prices.
+2. **Security**: Passwords are stored in plaintext, but real-world systems would require encryption or hashing.
+3. **UI Separation**: This module provides data and logic support for the UI screens (e.g., "portfolio" or "profit/loss") but does not implement UI components.
+4. **Atomicity**: All operations ensure transaction-like behavior to maintain data integrity.
+
+---
+
+#### Example Usage
+```python
+user1 = Account.register("alice@example.com", "securePass123")
+user1.deposit_funds(10000)
+user1.buy_shares("AAPL", 100)  # Assumes get_share_price("AAPL") = 150
+assert user1.get_profit_loss() == (user1.get_portfolio_value() - 10000)
+```
+
+This design ensures a self-contained, testable `Account` system that meets all required functional and validation criteria.

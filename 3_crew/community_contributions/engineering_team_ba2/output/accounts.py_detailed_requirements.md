@@ -1,97 +1,76 @@
-```markdown
-# Detailed Requirements for the Trading Simulation Platform Account Management System
+1. User Account Management  
+   1.1. Implement a mechanism for user registration allowing users to create an account.  
+   1.2. Implement a secure login screen where users can authenticate using their credentials.  
+   1.3. Ensure that each user account tracks funds and transaction history.
 
-1. User Account Management
-   1.1. Account Creation
-       - The system shall allow a new user to create an account.
-       - The user must provide the required registration details (e.g., username, password, email) during account creation.
-   1.2. User Authentication
-       - The system shall provide a user login screen for authentication.
-       - Appropriate error messages shall be displayed for an invalid username/password.
-   1.3. Account Balance Management
-       - The system shall allow a user to deposit funds into their account.
-       - The system shall allow a user to withdraw funds from their account.
-       - The system shall validate transactions to ensure that withdrawals do not result in a negative balance.
+2. Funds Management  
+   2.1. Allow users to deposit funds into their account.  
+   2.2. Allow users to withdraw funds, with the system enforcing that withdrawals do not result in a negative balance.  
+   2.3. Implement validation to prevent any withdrawal that exceeds the available balance.
 
-2. Trading Transactions
-   2.1. Buy/Sell Share Recording
-       - The system shall allow users to record transactions where they buy or sell shares.
-       - Each transaction must capture the following details:
-           • Transaction type (buy or sell)
-           • Share symbol (e.g., AAPL, TSLA, GOOGL)
-           • Quantity of shares bought or sold
-           • Transaction timestamp.
-   2.2. Transaction Validation
-       - For buy transactions:
-           • The system shall verify that the user has sufficient funds to cover the purchase based on the current share price.
-       - For sell transactions:
-           • The system shall verify that the user holds enough shares in their portfolio to complete the sell order.
-           • If the user attempts to sell more shares than owned, the system should reject the transaction with an appropriate error message.
+3. Trading Transactions  
+   3.1. Allow users to record transactions for buying or selling shares; each transaction record must include the symbol and the quantity involved.  
+   3.2. Validate purchase transactions to ensure the user has sufficient funds to buy the desired quantity of shares.  
+   3.3. Validate sell transactions to ensure the user actually holds the shares they wish to sell.
 
-3. Portfolio Management and Reporting
-   3.1. Portfolio Valuation
-       - The system shall calculate the total value of the user's portfolio.
-           • The valuation is computed by summing the current market value of each share held (using get_share_price(symbol) for current price lookup).
-       - The system shall calculate the profit or loss relative to the initial deposit.
-   3.2. Holdings Reporting
-       - The system shall provide a “Holdings” screen that displays the details of current share holdings at any point in time.
-       - The report shall include share symbol, total quantity held, current market price, and total value per share type.
-   3.3. Profit or Loss Reporting
-       - The system shall provide a “Profit or Loss” screen that displays the current profit or loss for the user.
-       - The calculation shall compare the current total portfolio value against the initial deposit (or cumulative net deposits) and all executed transactions.
-   3.4. Transaction History Reporting
-       - The system shall maintain a complete log of all transactions (deposits, withdrawals, buy orders, sell orders).
-       - The system shall provide a “Transactions” screen that lists all transactions in chronological order, with details (date/time, type, share symbol, quantity, and amount).
+4. Price Retrieval and Calculation  
+   4.1. Integrate with the provided function get_share_price(symbol) to retrieve current prices of shares.  
+   4.2. Use the function’s test implementation for fixed prices (AAPL, TSLA, GOOGL) during development and testing.  
+   4.3. Calculate the current total portfolio value based on the share prices retrieved.  
+   4.4. Compute the profit or loss by comparing the current total portfolio value against the initial deposit.
 
-4. Business Rules and Restrictions
-   4.1. Withdrawal Restrictions
-       - The system shall prevent a withdrawal if it would result in a negative balance.
-   4.2. Buy Transaction Restrictions
-       - The system shall prevent users from buying shares if their available funds are insufficient based on the current share price.
-   4.3. Sell Transaction Restrictions
-       - The system shall prevent users from selling more shares than they currently hold.
-   
-5. Integration with External Functions
-   5.1. Share Price Retrieval
-       - The system shall utilize the function get_share_price(symbol) to retrieve the current price for a given share symbol.
-       - A test implementation of get_share_price(symbol) will return fixed prices for AAPL, TSLA, and GOOGL.
-   5.2. Bond Interest Rates Data
-       - The system shall have a mechanism to display current bond interest rates.
-       - The “Bond Interest Rates” screen must support viewing the following bonds:
-           • 1-month, 3-month, 6-month, 1-year, 2-year, 3-year, 5-year, 10-year, 20-year, and 30-year.
+5. Portfolio and Holdings Reporting  
+   5.1. Create a “portfolio” screen to display a summary of the user’s current holdings.  
+   5.2. Create a “holdings” screen which lists the detailed record of shares owned by the user at any point in time.  
+   5.3. Ensure the system can generate on-demand reports displaying the current state of the portfolio.
 
-6. User Interface Screens
-   6.1. Login Screen
-       - Provide a screen where users can enter their credentials to log in.
-   6.2. Current Share Price Screen
-       - Display the current share price information using get_share_price(symbol) for available shares.
-   6.3. Bond Interest Rates Screen
-       - Display current bond interest rates for the specified bond durations.
-   6.4. Transactions Screen
-       - Display the user’s complete transaction history (deposits, withdrawals, buys, and sells).
-   6.5. Portfolio Screen
-       - Display an overview of the user’s portfolio including current holdings and total portfolio value.
-   6.6. Profit or Loss Screen
-       - Display the user’s calculated profit or loss at any point in time.
-   6.7. Holdings Screen
-       - Present detailed information on share holdings, similar to the portfolio screen (if differentiated from portfolio, both should be maintained).
-   6.8. Currency Exchange Screen
-       - Allow the user to exchange one currency for another as per current currency exchange rates.
-       - Validate exchange transactions with proper conversion and sufficient funds.
-   6.9. News Screen
-       - Provide a screen to display the latest market news and trading-related updates.
-   6.10. Currency Rates Screen
-       - Show the current currency exchange rates for various currencies.
+6. Profit or Loss Reporting  
+   6.1. Provide a “profit or loss” screen that reports the user’s profit or loss at any given time.  
+   6.2. Ensure that calculations factor in the initial deposit and all subsequent trades to present accurate results.
 
-7. General System Considerations
-   7.1. Data Consistency
-       - Ensure that all account, transaction, and portfolio data remains consistent across sessions.
-   7.2. Error Handling and Feedback
-       - Provide clear error messages and confirmation dialogues for all user actions (e.g., attempting an invalid transaction).
-   7.3. Security
-       - Implement secure login procedures and session management to protect user information.
-   7.4. Scalability
-       - Design the system components to allow potential future expansion of trading functions and market data sources.
+7. Transaction History  
+   7.1. Maintain a complete list of transactions made by the user over time.  
+   7.2. Create a “transactions” screen that displays all historical transactions in a chronological order.  
+   7.3. Each transaction record should include date, type (buy/sell), share symbol, quantity, and transaction value.
 
-This document will serve as the detailed requirements handoff to the engineering lead, ensuring a comprehensive implementation that meets all the business needs.
-```
+8. User Interface Screens  
+   8.1. Login Screen:  
+       8.1.1. Secure authentication module for user access.  
+   8.2. Current Share Price Screen:  
+       8.2.1. Display current share prices by integrating with the get_share_price(symbol) function.  
+   8.3. Bond Interest Rates Screen:  
+       8.3.1. Present current bond interest rates for various maturities – specifically 1-month, 3-month, 6-month, 1-year, 2-year, 3-year, 5-year, 10-year, 20-year, and 30-year.  
+   8.4. Transactions Screen:  
+       8.4.1. Provide a detailed view of all user transactions over time.  
+   8.5. Portfolio Screen:  
+       8.5.1. Display a summary of the current portfolio including total value, holdings, and profit/loss.  
+   8.6. Profit or Loss Screen:  
+       8.6.1. Isolate and display profit or loss data for quick user reference.  
+   8.7. Holdings Screen:  
+       8.7.1. Detail the exact shares held by the user along with quantities.  
+   8.8. Currency Exchange Screen:  
+       8.8.1. Allow users to initiate and perform currency exchange operations between supported currencies.  
+   8.9. News Screen:  
+       8.9.1. Present the latest financial and market news relevant to the trading simulation platform.  
+   8.10. Currency Rates Screen:  
+       8.10.1. Display current exchange rates for various currencies.
+
+9. Data Integrity and Error Handling  
+   9.1. Enforce validation rules to prevent:  
+       9.1.1. Withdrawals that would result in a negative balance.  
+       9.1.2. Purchase orders that exceed available funds.  
+       9.1.3. Sell orders for shares not held in the account.  
+   9.2. Provide clear, user-friendly error messages when validations fail.  
+   9.3. Ensure that all financial operations are atomic and consistently update the account state.
+
+10. Testing and Simulation  
+    10.1. Include a test suite that verifies the correct integration and behavior of the get_share_price(symbol) function with fixed prices for AAPL, TSLA, and GOOGL.  
+    10.2. Test all user interface screens for proper data display and correct responses to user actions.  
+    10.3. Simulate real-world scenarios (edge cases like insufficient funds, invalid sell orders, etc.) to ensure robust error handling and data integrity.
+
+11. Security and Compliance  
+    11.1. Ensure secure storage and handling of user credentials and sensitive financial data.  
+    11.2. Follow industry best practices for authentication and encryption in all modules.  
+    11.3. Validate user sessions and protect each endpoint to mitigate unauthorized access.
+
+This detailed requirements document outlines the full scope of features and validations needed for the trading simulation platform's account management system. The lead engineer should utilize these requirements to design and implement a robust, secure, and user-friendly system that meets all business expectations.
