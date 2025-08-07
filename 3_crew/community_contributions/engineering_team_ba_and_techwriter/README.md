@@ -1,4 +1,4 @@
-# EngineeringTeam Crew Extension
+# Engineering Team Crew Extension
 
 Welcome to the EngineeringTeam Crew project from agents project,
 0. requirenents are listed in main.py
