@@ -1,0 +1,76 @@
+requirements_task2:
+  description: >
+    Take the high level requirements provided as business requirements listed in  {requirements} and prepare a detailed requirements for the lead engineer;
+    IMPORTANT: Only output the detailed requirements in markdown format, 
+  expected_output: >
+    A numbered list of detailed requiremnts from business reqquirement listed in {requirements}, for the lead engineer to work with, identifying the detailed requirements the program.
+    IMPORTANT: Only output the detailed requirements in markdown format
+  agent: business_analyst 
+  # guardrail: "ensure each bullet contains a minimum of 100 words" 
+  output_file: output/{module_name}_detailed_requirements.md
+
+design_task:
+  description: >
+    Take the detailed requirements in output/{module_name}_detailed_requirements.md provided by the business analyst and prepare a detailed design for the engineer;
+    everything should be in 1 python module, but outline the classes and methods in the module.
+    Here are the requirements: output/{module_name}_detailed_requirements.md 
+    IMPORTANT: Only output the design in markdown format, laying out in detail the classes and functions in the module, describing the functionality.
+    Make sure the design is in markdown format not python code.
+  expected_output: >
+    A detailed design for the engineer, identifying the classes and functions in the module. Output the design not the code
+  agent: engineering_lead
+  
+ # context:
+ #   - requirements_task2:
+  output_file: output/{module_name}_design.md
+
+code_task:
+  description: >
+    Write a python module that implements the design described by the engineering lead, in order to achieve the requirements.
+    Here are the requirements: output/{module_name}_design.md
+  expected_output: >
+    A python module that implements the design and achieves the requirements.
+    IMPORTANT: Output ONLY the raw Python code without any markdown formatting, code block delimiters, or backticks.
+    The output should be valid Python code that can be directly saved to a file and executed.
+  agent: backend_engineer
+  context:
+    - design_task
+  output_file: output/{module_name}
+
+frontend_task:
+  description: >
+    Write a gradio UI in a module app.py that demonstrates the given backend class in {module_name}.
+    Assume there is only 1 useroutput/{module_name}_design.md
+  expected_output: >
+    A gradio UI in module app.py that demonstrates the given backend class.
+    The file should be ready so that it can be run as-is, in the same directory as the backend module, and it should import the backend class from {module_name}.
+    IMPORTANT: Output ONLY the raw Python code without any markdown formatting, code block delimiters, or backticks.
+    The output should be valid Python code that can be directly saved to a file and executed.
+  agent: frontend_engineer
+  context:
+    - code_task
+  output_file: output/app.py
+
+test_task:
+  description: >
+    Write unit tests for the given backend module {module_name} and create a test_{module_name} in the same directory as the backend module.
+  expected_output: >
+    A test_{module_name} module that tests the given backend module.
+    IMPORTANT: Output ONLY the raw Python code without any markdown formatting, code block delimiters, or backticks.
+    The output should be valid Python code that can be directly saved to a file and executed.
+  agent: test_engineer
+  context:
+    - code_task
+  output_file: output/test_{module_name}
+
+# add   a task to write a technical documentation for the given backend module {module_name}
+technical_documentation_task:
+  description: >
+    Write a technical documentation for the given backend module {module_name} and create a {module_name}_technical_documentation.md in the same directory as the backend module.
+    The technical documentation should be in markdown format.
+  expected_output: >
+    write echnical documentation for the given backend module {module_name}.
+  agent: technical_writer
+  context:
+    - code_task 
+  output_file: output/{module_name}_technical_documentation.md
